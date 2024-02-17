@@ -1,6 +1,6 @@
 # Fdb version 3
-["pdflatex"] 1708152117 "c:/Martin's file/大学/zuoye/大三下/184 computer graphics/hw-webpages-sp24-0-0-00-0/hw1/hw1writeup.tex" "hw1writeup.pdf" "hw1writeup" 1708152118
-  "c:/Martin's file/大学/zuoye/大三下/184 computer graphics/hw-webpages-sp24-0-0-00-0/hw1/hw1writeup.tex" 1708152117 621 7e70df75625f5ff3aaab42141c5635ab ""
+["pdflatex"] 1708152247 "c:/Martin's file/大学/zuoye/大三下/184 computer graphics/hw-webpages-sp24-0-0-00-0/hw1/hw1writeup.tex" "hw1writeup.pdf" "hw1writeup" 1708152248
+  "c:/Martin's file/大学/zuoye/大三下/184 computer graphics/hw-webpages-sp24-0-0-00-0/hw1/hw1writeup.tex" 1708152246 717 1e7bf58c3c5127ed9ce330fc075faefd ""
   "c:/texlive/2022/texmf-dist/fonts/map/fontname/texfonts.map" 1663151246 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "c:/texlive/2022/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1663150852 1004 54797486969f23fa377b128694d548df ""
   "c:/texlive/2022/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1663150852 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -58,8 +58,8 @@
   "c:/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1663152301 4448422 53302d27d6d34c8e3e97ce3a8b4bdfa7 ""
   "c:/texlive/2022/texmf-var/web2c/pdftex/pdflatex.fmt" 1663152436 2826460 ae2db2fad0a13af9d4c89f56b9f014c2 ""
   "c:/texlive/2022/texmf.cnf" 1663152276 713 e69b156964470283e0530f5060668171 ""
-  "hw1writeup.aux" 1708152118 672 734cfbf297f594ae0dea16118a87170e "pdflatex"
-  "hw1writeup.tex" 1708152117 621 7e70df75625f5ff3aaab42141c5635ab ""
+  "hw1writeup.aux" 1708152248 672 734cfbf297f594ae0dea16118a87170e "pdflatex"
+  "hw1writeup.tex" 1708152246 717 1e7bf58c3c5127ed9ce330fc075faefd ""
   (generated)
   "hw1writeup.aux"
   "hw1writeup.log"
