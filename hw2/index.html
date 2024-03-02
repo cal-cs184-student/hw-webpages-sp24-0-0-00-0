@@ -1,7 +1,138 @@
-<html>
+<!DOCTYPE html>
+<!--Credits: this HTML template is a modification of the CS184 sp24 website-->
+<html lang="en">
 	<head>
+        <link rel="stylesheet" href="./cs184-web-5d805804.css">
+		<!--link rel="stylesheet" href="./ionicons.min.css"-->
+        <!--link rel="stylesheet" href="./katex.min.css"-->
+        <link rel="stylesheet" href="./github-markdown.css">
+        <link rel="stylesheet" href="./github.min.css">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+		<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload='renderMathInElement(document.body, {delimiters:[
+			{left: "$$", right: "$$", display: true},
+			{left: "$", right: "$", display: false},
+			{left: "\\(", right: "\\)", display: false},
+			{left: "\\begin{equation}", right: "\\end{equation}", display: true},
+			{left: "\\begin{align}", right: "\\end{align}", display: true},
+			{left: "\\begin{alignat}", right: "\\end{alignat}", display: true},
+			{left: "\\begin{gather}", right: "\\end{gather}", display: true},
+			{left: "\\begin{CD}", right: "\\end{CD}", display: true},
+			{left: "\\[", right: "\\]", display: true}
+		]});'></script>
 	</head>
 	<body>
-		Homework 2 index.html here
+		<div class="article">
+			<div class="article-header">
+				<h1>CS184 Homework 2: MeshEdit</h1>
+				<p>Martin Guo</p>
+				<p>guozy@berkeley.edu</p>
+			</div>
+			<div class="article-body">
+				<div class="comp-md markdown-body">
+					<h4>This webpage is available at: <a href="https://cal-cs184-student.github.io/hw-webpages-sp24-0-0-00-0/hw2/index.html">https://cal-cs184-student.github.io/hw-webpages-sp24-0-0-00-0/hw2/index.html</a></h4>
+					<h1>Part 1: Bezier Curves with 1D de Casteljau Subdivision</h1>
+					<h2>Algorithm</h2>
+					<p>De Casteljau's algorithm is used to evaluate a point on the Bezier curve. Given a list of control points of the curve $p_1,\dots,p_n$ and a number $t\in[0,1]$, the algorithm does linear interpolation on every pair of points, i.e. $$q_i=(1-t)p_i+tp_{i+1}$$ to obtain a new list of points $q_1,\dots,q_{n-1}$. It recursively repeats this process on the list until a single point is left. This point is on the Bezier curve defined by the control points, evaluated by $t$.</p>
+					<p>In code, the control points are passed with a <code>std::vector&lt;Vector3D&gt;</code> reference. My implementation creates a new <code>std::vector</code> in each evaluation step, and returns the point when the <code>std::vector</code> has only size 1.</p>
+					<h2>Results</h2>
+					<p>The following screenshots are from <code>curve3.bzc</code>, a curve created by myself with 6 control points, showing the interpolation process in order. The blue points are interpolated intermediate points; the red point is the final evaluated point; the green curve is the evaluated Bezier curve.</p>
+					<img src="./Screenshot 2024-02-29 225237.png" width="60%">
+					<img src="./Screenshot 2024-02-29 225248.png" width="60%">
+					<img src="./Screenshot 2024-02-29 225255.png" width="60%">
+					<img src="./Screenshot 2024-02-29 225302.png" width="60%">
+					<img src="./Screenshot 2024-02-29 225309.png" width="60%">
+					<img src="./Screenshot 2024-02-29 225316.png" width="60%">
+					<img src="./Screenshot 2024-02-29 225326.png" width="60%">
+					<img src="./Screenshot 2024-02-29 225356.png" width="60%">
+					<p></p>
+					<p>Finally, the control points are moved around a little bit, and the parameter $t$ is changed.</p>
+
+					<h1>Part 2: Bezier Surfaces with Separable 1D de Casteljau</h1>
+					<h2>Algorithm</h2>
+					<p>Bezier surfaces can be evaluated using de Casteljau's algorithm given a $4\times 4$ grid of control points and 2 parameters $u,v\in[0,1]$. First, for each row of control points, evaluate the point on the Bezier curve given by these points and parameter $u$. Then, using these points returned as control points, evaluate the resulting point given $v$. The Bezier surface is defined by the resulting points.</p>
+					<h2>Results</h2>
+					<p>Here is a screenshot from <code>bez/teapot.bez</code>, with wireframe toggled off.</p>
+					<img src="./Screenshot 2024-02-29 232324.png" width="60%">
+
+					<h1>Part 3: Area-Weighted Vertex Normals</h1>
+					<h2>Algorithm</h2>
+					<p>The vertex normal vector is a weighted sum of its surrounding face normal vectors, weighted by the area of each face. My implementation iterates through all half-edges starting from the vertex, denote as $V$. For each neighboring face $VAB$, calculate the cross product of $\vec{VA}$ and $\vec{VB}$. By the definition of cross product, it is a normal vector of the face, and its norm is proportional to the face's area. So the result is obtained by adding all of them together and normalizing. Due to orientation issues, the negatives of the cross products are added together instead. </p>
+					<h2>Results</h2>
+					<p>Here is <code>dae/teapot.dae</code> shaded using flat shading:</p>
+					<img src="./Screenshot 2024-02-29 233902.png" width="60%">
+					<p></p><p>And this one is shaded using vertex normals:</p>
+					<img src="./Screenshot 2024-02-29 234014.png" width="60%">
+
+					<h1>Part 4: Edge Flip</h1>
+					<p>Given two triangles $ABC$ and $BAD$, flipping the edge $AB$ results in triangles $ADC$ and $CDB$, with vertex positions unchanged. This is mainly done by reassigning pointers in the half-edge data structure; it is the half-edges that define the topological structure of edges, vertices and faces.</p>
+					<p> First, draw a diagram of all vertices, edges, and faces involved in the flip, and label the corresponding iterators by assigning them to self-declared variables; then, the neighbors of all half-edges are set, first ones with significant changes on the diagram (half-edges originally on the edge $AB$ in this part), then ones which looks pretty much the same on the diagram but have some of their neighbors changed (half-edges $AC$, $CB$, $BD$, $DA$ in this case); this is done before setting all the involved vertices, which is done before setting all the edges, which is done before setting all the faces. </p>
+					<p>A total of 6 half-edges, 4 vertices and 2 faces are involved. No edges are involved because there are no changes to which half-edges they are attached to. No objects are created or destroyed.</p>
+					<p>My implementation worked on first run. Some of the tricks might include following the strict order of reassigning pointers as illustrated above; and that always complete setting an object before using its attributes to set other unset objects. When setting half-edges of vertices, edges and faces, choose the half-edge that has the least changes made to it.</p>
+					<p>Here is a screenshot from the previous teapot after some edge flips.</p>
+					<img src="./Screenshot 2024-02-29 235049.png" width="60%">
+
+					<h1>Part 5: Edge Split</h1>
+					<p>Given two triangles $ABC$ and $BAD$, splitting edge $AB$ creates a new vertex $P$ in the middle of $AB$ and connects it to vertices $C$ and $D$. A similar approach as in Part 4 is followed, although this part is trickier to implement because more half-edges, vertices, edges and faces are involved in this operation, including many that are newly created. All new half-edges, edges, vertices, and faces are created before setting the neighbors of any element; while setting each type of element, newly created objects are set first, before any of the old ones with significant or less obvious changes. In my implementation, there are a total of 12 half-edges, 5 vertices, 3 edges and 4 faces that are modified, including the creation of 6 half-edges, all 3 edges, 2 faces, and the vertex $P$. The position of the new vertex on edge $AB$ is set to the average of the vertex of half-edge $AB$ and the vertex of half-edge $BA$.</p>
+					<p>My implementation for non-boundary edges worked on first run, like in Part 4. </p><p>However, this is not the case when I tried to implement split for boundary edges.</p>
+					<h3>Extra Credit &amp; Debug</h3>
+					<p>It might seem that the boundary edge split have less objects involved ($\le $9 half-edges, 4 vertices, 2 edges and 2 faces), but it is definitely harder to implement. The trickiness lies solely on one particular half-edge. The bug was not apparent until I had implemented Loop subdivision and tried of perform one iteration after a boundary edge split. The program froze. After commenting out parts of the code and some printing, I found that the program was stuck in the loop calculating a boundary vertex degree. Then I recorded the addresses of the half-edge structures with help from the info overlay, and then printing them out when the program was stuck in the loop, to find out which half-edges the program was circulating on. Finally I found the cause was that I forgot to set a particular half-edge. This bug is quite hard to find: <ol><li>This half-edge was quite outside of the diagram I drew.</li><li>This half-edge is a boundary half-edge, so there was no way to trace the neighboring relations of the half-edges in question, because the source code always crashes trying to display a boundary half-edge. (On reflection, I found that this bug has the same cause as another bug I encountered earlier while implementing <code>Vertex::normal()</code> in Part 3; the bug is triggered by calling <code>Face::normal()</code> on the boundary face. In part 3 I fixed it by not calling this function and computing the cross products manually; I didn't have the concept of a virtual boundary face back then.)</li><li>Also, this half-edge was harder to obtain an iterator to compared with the other objects: you have to iterate over all of the half-edges starting from a vertex before finding it. As a result, there was no counterpart for this piece of code in the non-boundary version. </li></ol>The bug is fixed in the end.</p>
+					<h3>Results</h3>
+					<p>Here is a screenshot from the same teapot (which has no boundary edges) after some edge flips.</p>
+					<img src="./Screenshot 2024-03-01 201323.png" width="60%">
+					<p></p><p>Here is a screenshot with both edge flips and splits.</p>
+					<img src="./Screenshot 2024-03-01 201444.png" width="60%">
+					<p></p><p>This one is a screenshot from <code>dae/beetle.dae</code> with boundary edges, in its original appearance.</p>
+					<img src="./Screenshot 2024-03-01 202151.png" width="60%">
+					<p></p><p>After some edge splits on both boundary and non-boundary edges:</p>
+					<img src="./Screenshot 2024-03-01 202248.png" width="60%">
+					<p></p><p>Based on the previouly modified mesh, do some extra edge flips:</p>
+					<img src="./Screenshot 2024-03-01 202340.png" width="60%">
+
+					<h1>Part 6: Loop Subdivision for Mesh Upsampling</h1>
+					<h2>Algorithm</h2>
+					<p>Loop subdivision is a method for upsampling meshes. It does a <em>4-1 subdivision</em> on each triangle in the mesh, dividing it in 4 by making a new vertex in each edge and connecting them. It also updates the positions of all vertices according to a fixed set of rules, basically a weighted average of the positions of itself and its surrounding vertices. For every new vertex, each of the 2 endpoints of the edge it is on gets a weight of $\frac{3}{8}$, while each of the 2 vertices opposite from the edge gets a weight of $\frac{1}{8}$. For every old vertex, its original position gets a weight of $\frac{7}{16}$ if it has a degree of 3, and $\frac{5}{8}$ otherwise, while the rest of the weights are distributed equally among its neighbors (connected by an edge). The limit of an infinite number of iterations of Loop subdivision on the mesh is guaranteed to be $C^2$ continuous on non-extraordinary points (the vast majority), and $C^1$ continuous on extraordinary points.</p>
+					<p>The following algorithm realizes Loop subdivision with edge splits and flips, implemented by the previous functions. It does a total of 7 iterations over all vertices/edges in the mesh:
+					<ol>
+						<li>For every edge in the mesh, calculate the position of the new vertex to be created on the edge, and store it in the field <code>newPosition</code> in the edge data structure.</li>
+						<li>For every vertex in the mesh, calculate its updated position based on its current surroundings, and store it in the field <code>newPosition</code> in the vertex data structure.</li>
+						<li>For every edge in the mesh, check if neither one of its end-vertices has been newly created by a previous split; if true, split the edge, and mark the new vertex and new edges by setting the field <code>isNew</code> in their data structures. While splitting the edge, update the new vertex's position from the previously calculated value.</li>
+						<li>For every edge in the mesh, if it is marked New, and has exactly one new endpoint and one old endpoint, flip the edge.</li>
+						<li>For every old vertex in the mesh, update its position from the previously calculated value.</li>
+						<li>For every vertex in the mesh, set <code>isNew</code> to <code>false</code>.</li>
+						<li>For every edge in the mesh, set <code>isNew</code> to <code>false</code>.</li>
+					</ol></p>
+					<p>In Edge Split, one of the 3 newly-created edges is in fact part of the divided old edge, and so only 2 of the 3 edges are marked as new. This information is more conveniently known inside the edge splitting function, so I modified <code>splitEdge()</code> that it takes in an extra argument, <code>bool loop</code>. It is set to <code>false</code> with normal edge splits, but is set to <code>true</code> when called by Loop subdivision. When <code>loop==true</code>, the $PC$ and $PD$ edges mentioned in Part 5 are marked as new, while the $PB$ edge is marked old. The position of the new vertex is also set from <code>newPosition</code> when <code>loop==true</code>; otherwise it just defaults to the edge midpoint.</p>
+					<h2>Results</h2>
+					<p>The following screenshots are <code>dae/cube.dae</code> in its original appearance, after 1 iteration of Loop subdivision, 2 iterations, and 3 iterations respectively.</p>
+					<img src="./Screenshot 2024-03-01 220205.png" width="60%">
+					<img src="./Screenshot 2024-03-01 220218.png" width="60%">
+					<img src="./Screenshot 2024-03-01 220232.png" width="60%">
+					<img src="./Screenshot 2024-03-01 220815.png" width="60%">
+					<p></p><p>And this is the cube after 5 rounds of subdivision, with wireframe toggled off (still using flat shading):</p>
+					<img src="./Screenshot 2024-03-01 220256.png" width="60%">
+					<p></p><p>As we can see, the mesh becomes denser and more smooth after each iteration, and the sharp corners and edges become rounded. In fact they become hard to distinguish after more rounds of iteration. But if we split some mesh edges like this around this corner of the cube:</p>
+					<img src="./Screenshot 2024-03-01 221448.png" width="60%">
+					<p></p><p>After 5 rounds of subdivision, it looks like this, with wireframe toggled off:</p>
+					<img src="./Screenshot 2024-03-01 221535.png" width="60%">
+					<p></p><p>the edges have become sharper.</p>
+					<p>Also, the cube becomes potato-shaped after a number of subdivisions, slightly asymmetric. This is due to the asymmetry of the diagonal edges on each face relative to the cube, prior to splitting. We could eliminate the asymmetry by splitting each diagonal edge, like this: </p>
+					<img src="./Screenshot 2024-03-01 222524.png" width="60%">
+					<p></p><p>After 5 rounds of subdivision:</p>
+					<img src="./Screenshot 2024-03-01 222553.png" width="60%">
+					<img src="./Screenshot 2024-03-01 222605.png" width="60%">
+					<p></p><p>The cube now exhibits 6-sided symmetry.</p>
+					<h3>Extra Credit: Implementing Boundary Edge Subdivision</h3>
+					<p>In my original implementation, all boundary vertices/edges are skipped when updating positions. This is what <code>dae/beetle.dae</code> looks like after 2 rounds of subdivision skipping boundaries: </p>
+					<img src="./Screenshot 2024-03-01 223339.png" width="60%">
+					<p></p><p>Because the boundaries are skipped, their resolution stayed the same as before subdivision, exhibiting aliasing inconsistent with the interiors.</p>
+					<p>After having implemented boundary edge split (Extra Credit of Part 5), we could implement subdivisions on boundaries. The boundary vertices need a new set of updating rules; I implemented the following rules, which are from an Ed comment. For every new boundary vertex, just set it to be the edge's midpoint; for every old boundary vertex, give a weight of $\frac{3}{4}$ on its original position and weights of $\frac{1}{8}$ on its 2 boundary neighbors respectively, and take the weighted average as its updated position.</p>
+					<p>Here is what <code>beetle.dae</code> looks like after 2 rounds of subdivision with boundaries:</p>
+					<img src="./Screenshot 2024-03-01 224653.png" width="60%">
+					<img src="./Screenshot 2024-03-01 224855.png" width="60%">
+					<p></p><p>As we can see, the boundaries have become smoother as well as the interiors.</p>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>
