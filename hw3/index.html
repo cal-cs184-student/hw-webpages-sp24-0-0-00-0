@@ -1,7 +1,190 @@
-<html>
+<!DOCTYPE html>
+<!--Credits: this HTML template is a modification of the CS184 sp24 website-->
+<html lang="en">
 	<head>
+        <link rel="stylesheet" href="./cs184-web-5d805804.css">
+        <link rel="stylesheet" href="./github-markdown.css">
+        <link rel="stylesheet" href="./github.min.css">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+		<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload='renderMathInElement(document.body, {delimiters:[
+			{left: "$$", right: "$$", display: true},
+			{left: "$", right: "$", display: false},
+			{left: "\\(", right: "\\)", display: false},
+			{left: "\\begin{equation}", right: "\\end{equation}", display: true},
+			{left: "\\begin{align}", right: "\\end{align}", display: true},
+			{left: "\\begin{alignat}", right: "\\end{alignat}", display: true},
+			{left: "\\begin{gather}", right: "\\end{gather}", display: true},
+			{left: "\\begin{CD}", right: "\\end{CD}", display: true},
+			{left: "\\[", right: "\\]", display: true}
+		]});'></script>
+		<style>
+			piccap {text-align: center;}
+		</style>
 	</head>
 	<body>
-		Homework 3 index.html here
+		<div class="article">
+			<div class="article-header">
+				<h1>CS184 Homework 3: Pathtracer</h1>
+				<p>Martin Guo</p>
+				<p>guozy@berkeley.edu</p>
+			</div>
+			<div class="article-body">
+				<div class="comp-md markdown-body">
+					<h4>This webpage is available at: <a href="https://cal-cs184-student.github.io/hw-webpages-sp24-0-0-00-0/hw3/index.html">https://cal-cs184-student.github.io/hw-webpages-sp24-0-0-00-0/hw3/index.html</a></h4>
+					<h1>Overview</h1>
+					<p>In this homework, I implemented ray generation from the screen into the scene and primitive intersection tests; implemented BVH construction and intersection test for computational acceleration; implemented Monte Carlo integration of irradiance calculation and direct illumination with 2 sampling methods (sample uniformly on unit hemisphere or importance sample from light sources); implemented global illumination and compared rendered results from multiple bounces; implemented adaptive sampling for each pixel; went through nightmarish debugging.</p>
+					<h1>Part 1: Ray Generation and Scene Intersection</h1>
+					<h2>Algorithms</h2>
+					<h3>Ray generation and primitive intersection</h3>
+					<p>The field of vision is viewed as a rectangle with corners $(-\tan\frac{hFov}{2},-\tan\frac{vFov}{2},-1)$ and $(\tan\frac{hFov}{2},\tan\frac{vFov}{2},-1)$ in world space. For each pixel on the screen, a number of rays are generated from the camera position crossing through the corresponding square region on the field of vision, sampled uniformly at random. If a ray intersects with a primitive, the radiance from the intersection is calculated and added to the pixel.</p>
+					<h3>Triangle intersection test</h3>
+					<p>We use the Möller Trumbore Algorithm to calculate $t, b_1, b_2$, satisfying $\mathbf{o}+t\mathbf{d}=(1-b_1-b_2)\mathbf{p}_1+b_1\mathbf{p}_2+b_2\mathbf{p}_3$, where the ray intersects with the triangle. The tuple $(1-b_1-b_2,b_1,b_2)$ is a set of barycetric coordinates of the intersection point. First check that $t$ is within <code>min_t</code> and <code>max_t</code> of the ray; then check if $1-b_1-b_2$, $b_1$, $b_2$ are either all positive or all negative; if both are true, then the ray intersects with the interior of the triangle. The surface normal is interpolated from the vertex normals using the barycentric coordinates.</p>
+					<h2>Results</h2>
+					<p>Here is the normal shading for <code>sky/CBspheres.dae</code>:</p>
+					<img src="CBsphere1-3.png" width="60%">
+					<p></p><p>Here is <code>meshedit/cow.dae</code>, which took 112 seconds to render in Debug mode of Visual Studio on my computer.</p>
+					<img src="cow1.png" width="60%">
+					<p></p><p>And this is <code>sky/bunny.dae</code> (took nearly 20 minutes to render in debug mode).</p>
+					<img src="bunny1.png" width="60%">
+					<h1>Part 2: Bounding Volume Hierarchy</h1>
+					<h2>Algorithm</h2>
+					The BVH construction goes as follows:
+					<ol>
+						<li>Calculate the average of the centroids of all bounding boxes. It's used as the splitting point, where all primitives on one side of the point are grouped to the left child node and those on the other side are grouped to the right child.</li>
+						<li>We need to decide which of the $x$, $y$, $z$ axes to split on. We use surface area normals to decide: the surface areas of all 6 possible bounding boxes of children nodes are calculated, as well as the number of primitives for each bounding box. The axis with the least heuristic value is selected; the heuristic is calculated as <code>(surface_area_of_left_bounding_box * left_primitive_count + surface_area_of_right_bounding_box * right_primitive_count)</code>. In the slides, the heuristic also had a constant, which is dropped here because it doesn't affect comparison.</li>
+						<li>The primitive vector is rearranged so that primitives in each child are contiguous, making it easy to pass start and end iterators of children primitive vectors into the children nodes. If the node is leaf, then set the left and right children pointers to <code>NULL</code>; otherwise, construct BVH trees recursively on children nodes.</li>
+					</ol>
+					<p>If the centroid of a primitive's bounding box is too close to the split point, it is allocated to the shorter of the two lists at the moment; this is to avoid the case where all primitives share the same centroid, and thus allocated to only one of the children nodes, making the other child node empty.</p>
+					<h2>Results</h2>
+					<p>Here is the normal shading for <code>sky/CBlucy.dae</code> (took 9.21 seconds to render in debug mode):</p>
+					<img src="CBlucy2.png" width="60%">
+					<p></p><p>Here is <code>meshedit/maxplanck.dae</code>:</p>
+					<img src="maxplanck2.png" width="60%">
+					<p></p><p>This is <code>cow.dae</code> rendered again using BVH acceleration. </p>
+					<img src="cow2.png" width="60%">
+					<p></p><p>As far as I can tell,there is no visual difference between the previous render and this one, but it only took 1.98s to render in debug mode, compared to 112s with no acceleration. Also, <code>bunny.dae</code>rendered with BVH took only 1.48 seconds in Release mode of Visual Studio (which seems a little faster than Debug mode). BVH accelerates the rendering process by about a hundredfold on medium to complex scenes, by cutting off subtrees and not testing many primitives that are guaranteed not to intersect with the ray.</p>
+					<h1>Part 3: Direct Illumination</h1>
+					<h2>Algorithms</h2>
+					<h3>Direct lighting with uniform hemispherical sampling</h3>
+					<p>For the intersection, sample a direction in the hemisphere with <code>hemisphereSampler</code> uniformly at random, transform it into world space, and cast a ray starting from the current hit-point and with this direction. Set the new ray's <code>min_t</code> to <code>EPS_F</code> to avoid intersecting the current intersection. Call <code>bvh->intersect()</code> to check if it intersects with a light source; if yes, multiply its emission with <code>bsdf.f(w_out,w_in)</code> (<code>w_out</code> and <code>w_in</code> are in object space), the dot product of the sampled direction and the surface normal at the intersection converted to object space, and divide it by the PDF of uniform hemisphere sampling, which is $\frac{1}{2\pi}$. </p>
+					<h3>Direct lighting with importance sampling from light sources</h3>
+					<p>For each light source in the scene, make <code>ns_area_lights</code> samples from it. For each sample, cast a ray from the current intersection's hit-point and in the sampled direction. Set <code>min_t</code> of the ray to <code>EPS_F</code> and <code>max_t</code> to <code>distToLight - EPS_F</code>. If the ray intersects with a primitive which is NOT a light source, skip this sample; otherwise, it means that nothing is blocking the light, and we make the multiplications similar to that in hemispherical sampling, and divide it by the PDF of sampling from the light source. </p>
+					<p>If the light source is a point source, we can just sample once from the light source, calculate reflected radiance, and multiply it by <code>ns_area_lights</code> to give it the same weight as an area light source.</p>
+					<h2>Results</h2>
+					<p>This is the result using hemispherical sampling on <code>sky/CBbunny.dae</code>, with <code>-t 8 -s 256 -l 16</code>:</p>
+					<img src="CBbunny_mini_ada_acc_m1_H_256_16.png" width="60%">
+					<p></p><p>And this is the result with importance sampling, with the same other parameters:</p>
+					<img src="CBbunny_mini_ada_acc_m1_256_16.png" width="60%">
+					<p></p><p>We can see that the result from uniform hemisphere sampling is grainier than what results from light importance sampling, and there are black spots around regions of soft shadows.</p>
+					<p>The following are the results of varying the number of light samples per area light (the <code>-l</code> parameter). The scene is from <code>sky/CBspheres_lambertian.dae</code>, using <code>-t 16 -s 1</code>: </p>
+					<img src="CBsphereslamb_ada_acc_m1_1_1.png" width="60%">
+					<piccap><p><code>-l 1</code></p></piccap><p></p>
+					<img src="CBsphereslamb_ada_acc_m1_1_4.png" width="60%">
+					<piccap><p><code>-l 4</code></p></piccap><p></p>
+					<img src="CBsphereslamb_ada_acc_m1_1_16.png" width="60%">
+					<piccap><p><code>-l 16</code></p></piccap><p></p>
+					<img src="CBsphereslamb_ada_acc_m1_1_64.png" width="60%">
+					<piccap><p><code>-l 64</code></p></piccap><p></p>
+					<p>We can see that with 1 sample per pixel, when light sampling rate is 1, the soft shadows are rendered as scattered black dots. As light sampling rate increases, the noise gradually diminishes into smooth shadows.</p>
+					<p>Many samples sampled with uniform hemisphere sampling are useless because they don't come from a light source with positive radiance; with the same pixel sample rate, the number of effective samples is less than that of lighting sampling, which generates all samples from light sources, and therefore the rendered images has more noise than lighting sampling. </p>
+					<h1>Part 4: Global Illumination</h1>
+					<h2>Algorithm</h2>
+					<p>My implementation of <code>ray.depth</code> increases as it gets deeper into the scene. A ray shot out from the camera has depth 0, and a ray hitting a light source has depth <code>max_ray_depth</code>.</p>
+					<ul>
+						<li>If <code>depth == max_ray_depth - 1</code>, just return <code>one_bounce_radiance()</code>.</li>
+						<li>If <code>depth &lt; max_ray_depth - 1</code>: randomly sample a direction using <code>bsdf->sample_f()</code>, create a new ray with <code>min_t = EPS_F</code> and <code>depth</code> incremented by 1 relative to the outcoming ray, and check if the new ray intersects with the scene; if yes, recursively call the current function <code>at_least_one_bounce_radiance()</code> on the new ray, multiply it by the cosine between new direction and the surface normal, as well as current intersection's BSDF, and divide by the BSDF's sampling PDF to obtain the outcoming radiance.</li>
+						<li>If <code>isAccumBounces</code> is true, and <code>depth &lt; max_ray_depth - 1</code>, add an additional <code>one_bounce_radiance()</code> to the result. In this way radiance of every number of bounces are accumulated.</li>
+					</ul>
+					<p>To implement Russian Roulette, a termination probability <code>dropout</code> is set. The function has <code>dropout</code> probability to return <code>Vector3D(0)</code>, and <code>1 - dropout</code> probability to execute the above procedure and finally dividing the result by <code>1 - dropout</code>.</p>
+					<h2>Results</h2>
+					<h3>Scenes generated with global illumination</h3>
+					<p>Here is a global illumination of <code>CBspheres_lambertian.dae</code>, with parameters <code>-t 16 -s 1024 -l 4 -m 5</code>:</p>
+					<img src="CBsphereslamb_ada_acc_m5_1024_4.png" width="60%">
+					<p></p><p>With only direct illumination:</p>
+					<img src="CBsphereslamb_ada_acc_m1_1024_4.png" width="60%">
+					<p></p><p>And with only indirect illumination:</p>
+					<img src="CBsphereslamb_ada_acc_m5_1024_4(indirect).png" width="60%">
+					<p></p><p>This is global illumination of <code>CBbunny.dae</code> using the same parameters:</p>
+					<img src="CBbunny_ada_acc_m5_1024_4(pdf).png" width="60%">
+					<h3>Renders with varying number of light bounces</h3>
+					<p>The following are the results of <code>CBbunny.dae</code> with renders of each bounce and renders of accumulated bounces, using <code>-t 16 -s 1024 -l 4</code> and varying <code>-m</code>.</p>
+					<table>
+						<tr>
+							<td></td>
+							<td><p><code>isAccumBounces</code>: off</p></td>
+							<td><p><code>isAccumBounces</code>: on</p></td>
+						</tr>
+						<tr>
+							<td><p><code>-m 0</code></p></td>
+							<td><img src="CBbunny_ada_acc_m0_1024_4.png" width="90%"></td>
+							<td><img src="CBbunny_ada_acc_m0_1024_4.png" width="90%"></td>
+						</tr>
+						<tr>
+							<td><p><code>-m 1</code></p></td>
+							<td><img src="CBbunny_ada_m1_1024_4.png" width="90%"></td>
+							<td><img src="CBbunny_ada_acc_m1_1024_4.png" width="90%"></td>
+						</tr>
+						<tr>
+							<td><p><code>-m 2</code></p></td>
+							<td><img src="CBbunny_ada_m2_1024_4.png" width="90%"></td>
+							<td><img src="CBbunny_ada_acc_m2_1024_4.png" width="90%"></td>
+						</tr>
+						<tr>
+							<td><p><code>-m 3</code></p></td>
+							<td><img src="CBbunny_ada_m3_1024_4.png" width="90%"></td>
+							<td><img src="CBbunny_ada_acc_m3_1024_4.png" width="90%"></td>
+						</tr>
+						<tr>
+							<td><p><code>-m 4</code></p></td>
+							<td><img src="CBbunny_ada_m4_1024_4.png" width="90%"></td>
+							<td><img src="CBbunny_ada_acc_m4_1024_4.png" width="90%"></td>
+						</tr>
+						<tr>
+							<td><p><code>-m 5</code></p></td>
+							<td><img src="CBbunny_ada_m5_1024_4.png" width="90%"></td>
+							<td><img src="CBbunny_ada_acc_m5_1024_4(pdf).png" width="90%"></td>
+						</tr>
+					</table>
+					<p>In the 2nd bounce, there is light on the bottom side of the bunny, reflected by the floor, as well as the red and blue lights from the walls reflected by the bunny; in the 3rd bounce there is extra light from the top and the sides. These provide a more realistic rendering, as light in reality tends to bounce towards infinity.</p>
+					<h3>Renders with Russian Roulette termination</h3>
+					<p>These images are generated with Russian Roulette with a termination rate of 0.3. Using <code>-t 16 -s 1024 -l 4</code>, and varying <code>-m</code>.</p>
+					<img src="CBbunny_ada_dp3_m0_1024_4.png" width="60%">
+					<piccap><p><code>-m 0</code></p></piccap><p></p>
+					<img src="CBbunny_ada_dp3_m1_1024_4.png" width="60%">
+					<piccap><p><code>-m 1</code></p></piccap><p></p>
+					<img src="CBbunny_ada_dp3_m2_1024_4.png" width="60%">
+					<piccap><p><code>-m 2</code></p></piccap><p></p>
+					<img src="CBbunny_ada_dp3_m3_1024_4.png" width="60%">
+					<piccap><p><code>-m 3</code></p></piccap><p></p>
+					<img src="CBbunny_ada_dp3_m4_1024_4.png" width="60%">
+					<piccap><p><code>-m 4</code></p></piccap><p></p>
+					<img src="CBbunny_ada_dp3_m100_1024_4.png" width="60%">
+					<piccap><p><code>-m 100</code></p></piccap><p></p>
+					<h3>Renders with varying pixel sample rates</h3>
+					<p>These results are from <code>CBspheres_lambertian.dae</code> with <code>-s</code> values 1, 2, 4, 8, 16, 64, 1024 respectively. Using <code>-t 16 -l 4 -m 5</code>, without Russian Roulette termination.</p>
+					<img src="CBsphereslamb_ada_acc_m5_1_4.png" width="60%">
+					<img src="CBsphereslamb_ada_acc_m5_2_4.png" width="60%">
+					<img src="CBsphereslamb_ada_acc_m5_4_4.png" width="60%">
+					<img src="CBsphereslamb_ada_acc_m5_8_4.png" width="60%">
+					<img src="CBsphereslamb_ada_acc_m5_16_4.png" width="60%">
+					<img src="CBsphereslamb_ada_acc_m5_1024_4.png" width="60%">
+					<p></p><p>As pixel sampling rate increases, there is less noise in the image; when the pixel sampling rate is low, the noise is distributed evenly across the image.</p>
+					<h1>Part 5: Adaptive Sampling</h1>
+					<h2>Algorithm</h2>
+					<p>Adaptive sampling is the practice of stop acquiring more samples when the current samples gives a fair confidence that the future samples will be very close to the current sample mean. For every pixel, suppose $n$ values have been obtained from random ray samples through this pixel. 2 quantities are traced: the current sample sum $s_1=\sum_{i=1}^{n}{x_i}$ and the current sum of squares of sample values $s_2=\sum_{i=1}^{n}{x_i^2}$. After every 32 samples, calculate $$\mu=\frac{s_1}{n}$$  $$var\_n=\frac{\sigma^2}{n}=\frac{s_2-\mu s_1}{n(n-1)}$$ Then calculate $I=\sqrt{var\_n}\cdot 1.96$. Here the sample values and $I$ are all of type <code>Vector3D</code>, and the square root is element-wise. If every component in $I$ is less than or equal to $maxTolerance\cdot\mu$, then break from the current sample loop and stop sampling for the current pixel. Use the mean value of samples from the current pixel as the result.</p>
+					<h2>Results</h2>
+					<p>Here is the rendered image for <code>CBbunny.dae</code> with parameters <code>-t 16 -s 2048 -l 1 -m 5 -a 32 0.05</code>, without Russian Roulette termination.</p>
+					<img src="CBbunny_ada_acc_m5_2048_1.png" width="60%">
+					<p></p><p>Here is the adaptive sampling rate for each pixel as well, increasing from blue to green to red.</p>
+					<img src="CBbunny_ada_acc_m5_2048_1_rate.png" width="60%">
+					<p></p><p>Here is <code>CBspheres_lambertian.dae</code> and the sampling rate with the same parameters.</p>
+					<img src="CBsphereslamb_ada_acc_m5_2048_1.png" width="60%">
+					<p></p>
+					<img src="CBsphereslamb_ada_acc_m5_2048_1_rate.png" width="60%">
+					<p></p><p></p>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>
