@@ -1,7 +1,146 @@
-<html>
+<!DOCTYPE html>
+<!--Credits: this HTML template is a modification of the CS184 sp24 website-->
+<html lang="cn">
 	<head>
+        <link rel="stylesheet" href="./cs184-web-5d805804.css">
+        <link rel="stylesheet" href="./github-markdown.css">
+        <link rel="stylesheet" href="./github.min.css">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+		<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload='renderMathInElement(document.body, {delimiters:[
+			{left: "$$", right: "$$", display: true},
+			{left: "$", right: "$", display: false},
+			{left: "\\(", right: "\\)", display: false},
+			{left: "\\begin{equation}", right: "\\end{equation}", display: true},
+			{left: "\\begin{align}", right: "\\end{align}", display: true},
+			{left: "\\begin{alignat}", right: "\\end{alignat}", display: true},
+			{left: "\\begin{gather}", right: "\\end{gather}", display: true},
+			{left: "\\begin{CD}", right: "\\end{CD}", display: true},
+			{left: "\\[", right: "\\]", display: true}
+		]});'></script>
+		<style>
+			piccap {text-align: center;}
+		</style>
 	</head>
 	<body>
-		Homework 4 index.html here
+		<div class="article">
+			<div class="article-header">
+				<h1>CS184 Homework 4: Cloth Sim</h1>
+				<p>Martin Guo</p>
+				<p>guozy@berkeley.edu</p>
+			</div>
+			<div class="article-body">
+				<div class="comp-md markdown-body">
+					<h4>This webpage is available at: <a href="https://cal-cs184-student.github.io/hw-webpages-sp24-0-0-00-0/hw4/index.html">https://cal-cs184-student.github.io/hw-webpages-sp24-0-0-00-0/hw4/index.html</a></h4>
+					<h1>Overview</h1>
+					<p>In this homework I implemented the masses-and-springs representation of a cloth, implemented physical simulation using forward Euler method and Verlet integration, realized collisions with objects and collisions with the cloth itself, and wrote a number of simple shaders to display the cloth while simulating.</p>
+					<h1>Part 1: Masses and Springs</h1>
+					<p>The following are masses and springs displays for <code>scene/pinned2.json</code> without shearing constraints, with only shearing constrains, and with all constraints respectively.</p>
+					<img src="2024-04-01 234134.png" width="100%"><p></p>
+					<img src="2024-04-01 234149.png" width="100%"><p></p>
+					<img src="2024-04-01 234201.png" width="100%"><p></p>
+					<h1>Part 2: Simulation via numerical integration</h1>
+					<p>Various parameter changes are experimented with the cloth simulation on <code>pinned2.json</code>. Parameters involved include <code>ks</code>, <code>density</code> and <code>damping</code>.</p>
+					<p>1. With high <code>ks</code>, the cloth is more strectchy and tend to curl up together; with low <code>ks</code>, the cloth tends to be more expanded and more easily folded. The final resting state of low <code>ks</code> has more creases in the top of the cloth than that of high <code>ks</code>, and the creases are shallower.</p>
+					<p>Below are some final resting states of <code>pinned2.json</code> with varying <code>ks</code>. Other parameters are default.</p>
+					<img src="2024-04-02 140743.png" width="100%"><p></p>
+					<piccap><p><code>ks</code> = 100</p></piccap><p></p>
+					<img src="2024-04-02 140823.png" width="100%"><p></p>
+					<piccap><p><code>ks</code> = 5000 (default)</p></piccap><p></p>
+					<img src="2024-04-02 140937.png" width="100%"><p></p>
+					<piccap><p><code>ks</code> = 100000</p></piccap><p></p>
+					<p>2. With high <code>density</code>, the cloth is much heavier and more draped downwards. With low <code>density</code>, the cloth has more tendency to drift in the air.</p>
+					<p>Also, if <code>ks</code> and <code>density</code> are scaled by the same amount, the final resting state are the same.</p>
+					<p>Below are some final resting states with varying <code>density</code>. Other parameters are default.</p>
+					<img src="2024-04-02 142040.png" width="100%"><p></p>
+					<piccap><p><code>density</code> = 1</p></piccap><p></p>
+					<img src="2024-04-02 140823.png" width="100%"><p></p>
+					<piccap><p><code>density</code> = 15 (default)</p></piccap><p></p>
+					<img src="2024-04-02 142130.png" width="100%"><p></p>
+					<piccap><p><code>density</code> = 200</p></piccap><p></p>
+					<p>3. The <code>damping</code> parameter acts as the resistance on the cloth. It doesn't make any noticeable difference on the final resting state, but when <code>damping</code> is high, the cloth falls much slowly as though in thick liquid; when <code>damping</code> is low, the cloth moves much quicker and more freely. When <code>damping</code> = 0, the cloth doesn't come to a rest after a very long time.</p>
+					<p>Screenshots of the cloth in the process of falling from starting position, with varying <code>damping</code>, other parameters are default:</p>
+					<img src="2024-04-02 143013.png" width="100%"><p></p>
+					<piccap><p><code>density</code> = 0.011494</p></piccap><p></p>
+					<img src="2024-04-02 142945.png" width="100%"><p></p>
+					<piccap><p><code>density</code> = 0.862069</p></piccap><p></p>
+					<p>Here's an extra screenshot from <code>pinned4.json</code> in its final resting state, with default parameters and normal appearance.</p>
+					<img src="2024-04-02 143530.png" width="100%"><p></p>
+					<h1>Part 3: Handling collisions with other objects</h1>
+					<h2>Results from <code>sphere.json</code></h2>
+					<p>Here is a screenshot of the cloth lying on the sphere, with default parameters (<code>ks</code> = 5000). Shaded using normal shading.</p>
+					<img src="2024-04-02 154246.png" width="100%"><p></p>
+					<p>And the following two screenshots are cloths with <code>ks</code> = 500 and <code>ks</code> = 50000 respectively.</p>
+					<img src="2024-04-02 154424.png" width="100%"><p></p>
+					<img src="2024-04-02 154503.png" width="100%"><p></p>
+					<p>We can see that with a lower spring constant, the cloth is more easily folded, exhibiting more and shallower creases around the sphere. With a high spring constant, the cloth is more bouncy and tends to stick out, and the creases are fewer, wider and deeper.</p>
+					<h2>Results from <code>plane.json</code></h2>
+					<p>Here is a screenshot of the final resting state of the cloth on the plane, using normal shading.</p>
+					<img src="2024-04-02 153813.png" width="100%"><p></p>
+					<h1>Part 4: Handling self-collisions</h1>
+					<p>The following screenshots show the falling and folding of a cloth in <code>selfCollision.json</code> with default parameters.</p>
+					<img src="2024-04-02 183505.png" width="100%"><p></p>
+					<img src="2024-04-02 183523.png" width="100%"><p></p>
+					<img src="2024-04-02 183558.png" width="100%"><p></p>
+					<p>Observations for varying <code>ks</code> and <code>density</code> are also made. When <code>ks</code> is small, a larger number of creases are formed and there are more waves on the cloth as it bounces on the plane, because the point masses move more easily relative to each other. This is what it looks like (<code>ks</code> = 100):</p>
+					<img src="2024-04-02 183747.png" width="100%"><p></p>
+					<img src="2024-04-02 183814.png" width="100%"><p></p>
+					<p>When <code>ks</code> is large, the creases are fewer and larger than default, and is more bouncy on the plane: (the following screenshot is taken with <code>ks</code> = 25000)</p>
+					<img src="2024-04-02 183914.png" width="100%"><p></p>
+					<p>When <code>density</code> is small, the internal forces are relatively more dominant in determining the cloth's behavior, and the cloth bends as it falls gently to the plane: (<code>density</code> = 1)</p>
+					<img src="2024-04-02 184126.png" width="100%"><p></p>
+					<p>When <code>density</code> is large, the cloth falls with a flump onto the plane.</p>
+					<h1>Part 5: Shaders</h1>
+					<p>A shader program takes a 3D model as input, calculates how it should look like on the screen, and displays it. Vertex shaders apply transforms to vertices and calculate the vertex positions as well as passing important information about the vertices to the fragment shaders; fragment shaders take the vertex arguments and, according to lighting and shading rules, decide and output the color to be displayed on the pixels corresponding to the vertices. Various shading procedures can achieve various effects of lighting and texture.</p>
+					<p>All following results are from the resting state of <code>sphere.json</code>.</p>
+					<h2>Blinn-Phong Shader</h2>
+					<p>The lighting calculated by the Blinn-Phong shading model has three components: ambient lighting, which serves as background; diffuse lighting, which corresponds with diffuse reflections of light on the material; and specular lighting, which are highlights on the material and corresponds with mirror reflection on the material.</p>
+					<p>The following are the ambient, diffuse and specular lighting components respectively. Some parameters are as follows: $K_a=0.1$, $I_a=vec4(1,1,1,0)$, $K_d=1$, $K_s=0.5$, $p=32$.</p>
+					<img src="2024-04-02 235121.png" width="100%"><p></p>
+					<img src="2024-04-02 235317.png" width="100%"><p></p>
+					<img src="2024-04-02 235438.png" width="100%"><p></p>
+					<p>And this is the full Phong shading result:</p>
+					<img src="2024-04-02 201807.png" width="100%"><p></p>
+					<h2>Texture Shader</h2>
+					<p>Here is the result of texture shading with a replaced <code>.png</code> texture.</p>
+					<img src="2024-04-03 001159.png" width="100%"><p></p>
+					<h2>Bump Mapping and Displacement Mapping</h2>
+					<p><code>texture_4</code> is used for bump and displacement mapping, and some other parameters are Normal = 100, Height = 0.02.</p>
+					<p>Here is the sphere rendered using bump mapping with default parameters excluding above: </p>
+					<img src="2024-04-03 002901.png" width="100%"><p></p>
+					<p>Here is the cloth in its starting position:</p>
+					<img src="2024-04-03 003032.png" width="100%"><p></p>
+					<p>And the cloth resting on the ball:</p>
+					<img src="2024-04-03 003005.png" width="100%"><p></p>
+					<p>This is the sphere shaded using displacement mapping instead:</p>
+					<img src="2024-04-03 005246.png" width="100%"><p></p>
+					<p>Compared to the same sphere shaded using bump mapping, this sphere has real bumps on it, corresponding to the regions of high and low values of the height map; the previous one was very smooth in terms of vertex positions.</p>
+					<p>The following are results of bump mapping and displacement mapping on the sphere with varying mesh density of the sphere.</p>
+					<table>
+						<tr>
+							<td></td>
+							<td><p>Bump Mapping</p></td>
+							<td><p>Displacement Mapping</p></td>
+						</tr>
+						<tr>
+							<td><p><code>-a 16 -o 16</code></p></td>
+							<td><img src="2024-04-03 004034 16.png" width="100%"></td>
+							<td><img src="2024-04-03 004049 16.png" width="100%"></td>
+						</tr>
+						<tr>
+							<td><p><code>-a 128</code></p><p><code>-o 128</code></p></td>
+							<td><img src="2024-04-03 003931 128.png" width="100%"></td>
+							<td><img src="2024-04-03 003949 128.png" width="100%"></td>
+						</tr>
+					</table>
+					<p>In each row, the camera is placed at the exact same position. We can see that displacement mapping noticeably inflates up the sphere compared to bump mapping. On the sphere with coarser mesh, the bumps produced by displacement mapping are less obvious, because the texture has a recurrent pattern and a coarse mesh averages out the bumps. On the sphere with fine mesh, the bumps are more visible and fitted to the texture pattern.</p>
+					<h2>Mirror Shader</h2>
+					<p>The result of the cloth AND the sphere shaded using mirror shader:</p>
+					<img src="2024-04-03 011602.png" width="100%"><p></p>
+					<p>The result of the cloth resting on sphere:</p>
+					<img src="2024-04-03 011639.png" width="100%"><p></p>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>
